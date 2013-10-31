@@ -5,13 +5,14 @@ extern "C" {
 #include <Python.h>
 #include <stdint.h>
 #include <numpy/arrayobject.h>
+#include "seqscanseg.h"
 
 static PyObject *seqscanseg(PyObject *, PyObject *);
 
 static PyMethodDef SeqScanSegMethods[] = {
 	{"seqScanSeg", seqscanseg, METH_VARARGS, "Sequence scanline segmentation"},
 	{NULL, NULL, NULL, 0, NULL}
-}
+};
 
 PyMODINIT_FUNC
 initseqscanseg(void) {
@@ -19,15 +20,28 @@ initseqscanseg(void) {
 	import_array();
 }
 
-static void segmentate(PyArrayObject *src, PyArrayObject *dst) {
-	
+typedef struct _Segment {
+	unsigned int id;
+	unsigned long sumI;
+	unsigned int pxls;
+} Segment;
+
+static void segmentateDecorator(PyArrayObject *src, PyArrayObject *dst, int delta) {
+	int nd = PyArray_NDIM(src);
+	npy_intp *dims = PyArray_DIMS(src);
+	int step = (nd == 3) ? dims[2] : 1;
+	uint32_t *dstData = PyArray_BYTES(dst);
+	uint8_t *srcData = PyArray_BYTES(src);
+
+	segmentate(srcData, step, dstData, dims[1], dims[0], delta);	
 }
 
 static PyObject* seqscanseg(PyObject *self, PyObject *args) {
 	PyArrayObject *ptr;
 	PyObject *rslt;
-
-	if (!PyArg_ParseTuple(args, "O", &ptr)) {
+	unsigned int delta;
+	
+	if (!PyArg_ParseTuple(args, "OI", &ptr, &delta)) {
 		return NULL;
 	}
  
@@ -35,7 +49,7 @@ static PyObject* seqscanseg(PyObject *self, PyObject *args) {
     	return NULL;
   	}
 
-	markComponents(ptr, rslt);
+  	segmentateDecorator(ptr, rslt, (delta));
 	return rslt;
 }
 
