@@ -33,15 +33,16 @@ def createDir(name):
 def main():
 	#src = cv2.imread("proc_src/seqscan_test2.png")
 	#src = cv2.imread("proc_src/components.png")
-	src = cv2.imread("proc_src/seqscanseg_test.png")
+	#src = cv2.imread("proc_src/seqscanseg_test.png")
+	src = cv2.imread("proc_src/seqscan_test3.png")
 	src = cv2.cvtColor(src, cv2.COLOR_BGR2GRAY)
 
 	createDir("rslt_")
-	for p in range(136, 137):
+	for p in range(0, 255):
 		print p
 		a = seqscanseg.seqScanSeg(src, p)
-		#dst = colorizeComponents(seqscanseg.seqScanSeg(src, p))
-		#cv2.imwrite("rslt_/rslt" + str(p) + ".png", dst)
+		dst = colorizeComponents(a)
+		cv2.imwrite("rslt_/rslt" + str(p) + ".png", dst)
 	
 	
 	

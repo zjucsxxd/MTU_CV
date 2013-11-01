@@ -15,16 +15,12 @@ class Segment {
 	Segment *parent;
 	double avg;
 public:
-	Segment(uint8_t pxlI, uint32_t id, Segment *parent = NULL) {
+	void set(uint32_t id, uint8_t pxlI) {
 		this->id = id;
 		this->pxls = 1;
 		this->sumI = pxlI;
 		this->avg = pxlI;
-
-		if (parent != NULL) {
-			parent->addPixel(pxlI);
-		}
-		this->parent = parent;
+		this->parent = NULL;	
 	}
 
 	double getAverangeI() {
@@ -76,7 +72,41 @@ public:
 	}
 };
 
-bool isLessDistance(Segment *a, Segment *b, int delta) {
+class MemoryPool {
+	vector<Segment *> chunks;
+	int maxChunkSize;
+	int curChunkSize;
+	Segment *curChunk;
+public:
+	MemoryPool(int chunkSize) {
+		curChunk = new Segment [chunkSize];
+		chunks.push_back(curChunk);
+		this->maxChunkSize = chunkSize;
+		this->curChunkSize = 0;
+	} 
+
+	Segment *create(int id, uint8_t pxlI) {
+		if (curChunkSize == maxChunkSize) {
+			curChunk = new Segment [maxChunkSize];
+			chunks.push_back(curChunk);
+			curChunkSize = 0;
+		}
+
+		curChunk[curChunkSize].set(id, pxlI);
+		++curChunkSize;
+		return curChunk + curChunkSize - 1;
+	}
+
+	~MemoryPool() {
+		for(vector<Segment *>::const_iterator it = chunks.begin(); it != chunks.end(); ++it) {
+			Segment *s = *it;
+			delete [] s;
+		}
+		chunks.clear();
+	}
+};
+
+inline bool isLessDistance(Segment *a, Segment *b, int delta) {
 	if ((a == NULL) || (b == NULL)) {
 		return false;
 	} else {
@@ -84,7 +114,7 @@ bool isLessDistance(Segment *a, Segment *b, int delta) {
 	}
 }
 
-bool isLessDistance(Segment *a, uint8_t pxlI, int delta) {
+inline bool isLessDistance(Segment *a, uint8_t pxlI, int delta) {
 	return (a == NULL) ? false : (a->distToPixel(pxlI) < delta);
 }
 
@@ -97,7 +127,7 @@ Segment *closerToPixel(Segment *a, Segment *b, uint8_t pxlI) {
 	return (a->distToPixel(pxlI) < b->distToPixel(pxlI)) ? a : b;
 }
 
-uint32_t getComponentId(vector<Segment *> &segments, uint8_t srcI, uint32_t upLbl, uint32_t leftLbl, int delta) {
+uint32_t getComponentId(vector<Segment *> &segments, uint8_t srcI, uint32_t upLbl, uint32_t leftLbl, int delta, MemoryPool &pool) {
 	if (srcI == 0) {
 		return 0;
 	}
@@ -106,10 +136,10 @@ uint32_t getComponentId(vector<Segment *> &segments, uint8_t srcI, uint32_t upLb
 	Segment *leftSeg = (leftLbl == 0) ? NULL : segments[leftLbl - 1];
 	bool isUpLessDelta = isLessDistance(upSeg, srcI, delta);
 	bool isLeftLessDelta = isLessDistance(leftSeg, srcI, delta);
-
+	
 	if ((!isUpLessDelta) && (!isLeftLessDelta)) {
 		uint32_t id = segments.size() + 1;
-		segments.push_back(new Segment(srcI, id));
+		segments.push_back(pool.create(id, srcI));
 		return id;
 	}
 
@@ -132,35 +162,29 @@ uint32_t getComponentId(vector<Segment *> &segments, uint8_t srcI, uint32_t upLb
 	}
 }
 
-void releaseSegments(const vector<Segment *> &v) {
-	for(vector<Segment *>::const_iterator it = v.begin(); it != v.end(); ++it) {
-		Segment *s = *it;
-		delete s;
-	}
-}
-
 void segmentate(uint8_t *src, int step, uint32_t *dst, int width, int height, int delta) {
+	MemoryPool pool(10000);
 	vector<Segment *> segments;
 	uint32_t *curRow = dst;
 	uint32_t *prevRow = dst;
 
-	*curRow = getComponentId(segments, *src, 0, 0, delta);
+	*curRow = getComponentId(segments, *src, 0, 0, delta, pool);
 	src += step;
 	curRow += 1;	
 
 	for(int j = 1; j < width; ++j) {
-		*curRow = getComponentId(segments, *src, 0, *(curRow - 1), delta);
+		*curRow = getComponentId(segments, *src, 0, *(curRow - 1), delta, pool);
 		curRow += 1;
 		src += step;
 	}
 
 	for(int i = 1; i < height; ++i) {
-		*curRow = getComponentId(segments, *src, *prevRow, 0, delta);
+		*curRow = getComponentId(segments, *src, *prevRow, 0, delta, pool);
 		++prevRow;
 		++curRow;
 		src += step;
 		for (int j = 1; j < width; ++j) {
-			*curRow = getComponentId(segments, *src, *prevRow, *(curRow -1), delta);
+			*curRow = getComponentId(segments, *src, *prevRow, *(curRow -1), delta, pool);
 			++prevRow;
 			++curRow;
 			src += step;
@@ -175,6 +199,4 @@ void segmentate(uint8_t *src, int step, uint32_t *dst, int width, int height, in
       		dst += 1;
     	}
     }
-
-	releaseSegments(segments);	
 }
