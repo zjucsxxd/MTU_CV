@@ -51,7 +51,7 @@ cdef class SegProp:
 		self.yS = prop.yS
 
 	def getHist(self):
-		cdef np.ndarray h = np.zeros([256], dtype = np.int)
+		cdef np.ndarray h = np.zeros([256], dtype = np.float32)
 		for i in range(0,256):
 			h[i] = self.hist[i]
 		return h
