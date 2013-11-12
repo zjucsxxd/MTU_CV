@@ -10,7 +10,7 @@ def filterAndShowSegments(img, segsProps):
 	global frm
 	for key in segsProps:
 		segProps = segsProps[key]
-		if (segProps.S > 100 and segProps.maxI > 180):
+		if (segProps.S > 500 and segProps.maxI > 190 and segProps.S < 36000):
 			cv2.rectangle(img, (segProps.x0, segProps.y0), 
 							(segProps.x1, segProps.y1), (155, 155, 155))
 		if (segProps.S == 50000):
@@ -27,7 +27,8 @@ def main():
 		(ret, img) = cap.read()
 		frm = frm + 1
 		img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-		segmap = segalg.seqScanSeg(img, 10)
+		(ret, img) = cv2.threshold(img, 150, 255, cv2.THRESH_TOZERO)
+		segmap = segalg.seqScanSeg(img, 50)
 		segsProps = segprops.extractSegProps(segmap, img)
 		filterAndShowSegments(img, segsProps)	
 		cv2.imshow("Window", img)
