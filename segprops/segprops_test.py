@@ -11,7 +11,7 @@ def filterAndShowSegments(img, segsProps):
 	for key in segsProps:
 		segProps = segsProps[key]
 		if (segProps.S > 500 and segProps.maxI > 190):
-			print (segProps.x0, segProps.y0, segProps.x1, segProps.y1, segProps.maxI)
+			print (segProps.x0, segProps.y0, segProps.x1, segProps.y1, segProps.maxI), segProps.xS / segProps.S, segProps.yS / segProps.S
 			cv2.rectangle(img, (segProps.x0, segProps.y0), 
 							(segProps.x1, segProps.y1), (155, 155, 155))
 	cv2.namedWindow("my")

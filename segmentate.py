@@ -7,16 +7,15 @@ import segprops.segprops as segprops
 frm = 0
 
 def filterAndShowSegments(img, segsProps):
-	global frm
-	for key in segsProps:
-		segProps = segsProps[key]
-		if (segProps.S > 500 and segProps.maxI > 190 and segProps.S < 36000):
-			cv2.rectangle(img, (segProps.x0, segProps.y0), 
-							(segProps.x1, segProps.y1), (155, 155, 155))
-		if (segProps.S == 50000):
-			print segProp.S, frm
-	
-	
+    global frm
+    for key in segsProps:
+        segProps = segsProps[key]
+        if (segProps.S > 50 and segProps.maxI > 190 and segProps.S < 36000):
+            cv2.rectangle(img, (segProps.x0, segProps.y0), (segProps.x1, segProps.y1), (155, 155, 155))
+            cv2.circle(img, (segProps.yS, segProps.xS), 10, (255, 255, 255))
+            print segProps.xS / segProps.S, segProps.yS / segProps.S
+        if (segProps.S == 50000):
+            print segProp.S, frm
 
 def main():
 	global frm
