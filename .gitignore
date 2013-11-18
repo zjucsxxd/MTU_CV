@@ -35,6 +35,15 @@ nosetests.xml
 .project
 .pydevproject
 
+#vim temp
+*.swp
+*.*~
+
+# cython generated
+segprops/segprops.c
+segprops/segprops.cpp
+
+
 # Test results
 *.prof
 rslt_

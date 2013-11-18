@@ -76,7 +76,8 @@ cdef void addPixel(CSegProp *prop, int x, int y, np.uint8_t srcI):
     prop.S += 1
     prop.xS += x
     prop.yS += y
-    
+    prop.sumI += srcI
+
     if (prop.maxI < srcI):
         prop.maxI = srcI
     if (prop.minI > srcI):
@@ -96,9 +97,10 @@ cdef CSegProp createSegProp(int id, np.uint8_t srcI, int x, int y):
     segprop.y1 = y
     segprop.maxI = srcI
     segprop.minI = srcI
+    segprop.sumI = srcI
     return segprop
 
-def extractSegProps(np.ndarray[np.int_t, ndim = 2] segmap, np.ndarray[np.uint8_t, ndim = 2] src):
+def extractSegProps(np.ndarray[np.int32_t, ndim = 2] segmap, np.ndarray[np.uint8_t, ndim = 2] src):
     cdef np.int_t I
     cdef map[int, CSegProp] segsProps
     cdef CSegProp segProps

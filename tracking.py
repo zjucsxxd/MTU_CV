@@ -4,11 +4,14 @@ import cv2
 import cv
 import segmentation.seqscanseg as segalg
 import segprops.segprops as segprops
+import sources.llserver as llsrv
 
-BACKGROUND_THRESHOLD = 150
-SEGMENT_THRESHOLD = 50
+BACKGROUND_THRESHOLD = 160
+SEGMENT_THRESHOLD = 33
 SEGMENT_MINS = 100
-SEGMENT_MAXI = 200
+SEGMENT_MAXI = 190
+#SEGMENT_MINAVG = 165
+TRACKING_MINP = 0.97
 
 class TrackSegment:
 #    histo
@@ -61,7 +64,7 @@ def fillMotionTable(motionTable, segsProps):
 
     for k, v in segsProps.iteritems():
         (maxP, segment) = findMaxPSegment(motionTable, v)
-        if (maxP < 0.85):
+        if (maxP < TRACKING_MINP):
             motionTable.append(TrackSegment(v.getHist(), v.xS, v.yS, v.S))
         else:
             segment.add(v.getHist(), v.xS, v.yS, v.S)
@@ -69,7 +72,7 @@ def fillMotionTable(motionTable, segsProps):
     for trkSeg in list(motionTable):
         if (trkSeg.isShown == False):
             trkSeg.timeOfEps += 1
-            if (trkSeg.timeOfEps > 100):
+            if (trkSeg.timeOfEps > 10):
                 motionTable.remove(trkSeg)
         else:
             trkSeg.timeOfEps = 0
@@ -84,13 +87,21 @@ def showMotion(motionTable, dst):
 
 
 def main():
-    cap = cv2.VideoCapture("../Astrohn_auto.mp4")
+#    cap = cv2.VideoCapture("../Astrohn_auto.mp4")
+    cap = llsrv.LLServerClient("192.168.1.9", 34123)
     cv2.namedWindow("Window")
     motionTable = []
-
+    
+    frm = 0
     while (cv2.waitKey(30) == -1):
         (ret, img) = cap.read()
-        img_proc = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY, dstCn = 1)
+#	cv2.imwrite("../check/src_" + str(frm) + ".png", img)
+	if (len(img.shape) == 3):
+	    img_proc = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY, dstCn = 1)
+	else:
+	    img_proc = img
+	    img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+	img = cv2.medianBlur(img, 3)
         (ret, img_proc) = cv2.threshold(img_proc, BACKGROUND_THRESHOLD, 
                                         255, cv2.THRESH_TOZERO)
         segsProps = extractSegments(img_proc)
@@ -98,7 +109,8 @@ def main():
         showSegments(segsProps, img)
         showMotion(motionTable, img)
         cv2.imshow("Window", img)
-
+#    	cv2.imwrite("../check/rslt_" + str(frm) + ".png", img)
+	frm += 1
 
 
     return
